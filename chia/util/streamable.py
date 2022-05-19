@@ -96,6 +96,8 @@ def dataclass_from_dict(klass: Type[Any], d: Any) -> Any:
     elif is_type_List(klass):
         # Type is a list, data is a list
         return [dataclass_from_dict(get_args(klass)[0], item) for item in d]
+    elif hasattr(klass, "from_json_dict"):
+        return klass.from_json_dict(d)
     elif issubclass(klass, bytes):
         # Type is bytes, data is a hex string
         return klass(hexstr_to_bytes(d))

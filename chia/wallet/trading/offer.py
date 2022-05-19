@@ -297,7 +297,7 @@ class Offer:
                         OFFER_MOD,
                         Program.to(inner_solutions),
                         lineage_proof=LineageProof(
-                            parent_coin.parent_coin_info, inner_puzzle.get_tree_hash(), parent_coin.amount
+                            parent_coin.parent_coin_info, inner_puzzle.get_tree_hash(), uint64(parent_coin.amount)
                         ),
                     )
                     solution: Program = (

@@ -294,7 +294,7 @@ class DIDWallet:
         future_parent = LineageProof(
             coin.parent_coin_info,
             inner_puzzle.get_tree_hash(),
-            coin.amount,
+            uint64(coin.amount),
         )
 
         await self.add_parent(coin.name(), future_parent, True)
@@ -316,7 +316,7 @@ class DIDWallet:
             parent_info = LineageProof(
                 parent_state.coin.parent_coin_info,
                 parent_innerpuz.get_tree_hash(),
-                parent_state.coin.amount,
+                uint64(parent_state.coin.amount),
             )
             await self.add_parent(coin.parent_coin_info, parent_info, False)
 
@@ -392,7 +392,7 @@ class DIDWallet:
                 future_parent = LineageProof(
                     coin.parent_coin_info,
                     innerpuz.get_tree_hash(),
-                    coin.amount,
+                    uint64(coin.amount),
                 )
                 await self.add_parent(coin.name(), future_parent, False)
                 if children_state.spent_height != children_state.created_height:
@@ -423,7 +423,7 @@ class DIDWallet:
                     parent_info = LineageProof(
                         parent_state.coin.parent_coin_info,
                         parent_innerpuz.get_tree_hash(),
-                        parent_state.coin.amount,
+                        uint64(parent_state.coin.amount),
                     )
                     await self.add_parent(coin.parent_coin_info, parent_info, False)
             assert parent_info is not None
@@ -953,12 +953,12 @@ class DIDWallet:
         future_parent = LineageProof(
             eve_coin.parent_coin_info,
             did_inner_hash,
-            eve_coin.amount,
+            uint64(eve_coin.amount),
         )
         eve_parent = LineageProof(
             launcher_coin.parent_coin_info,
             launcher_coin.puzzle_hash,
-            launcher_coin.amount,
+            uint64(launcher_coin.amount),
         )
         await self.add_parent(eve_coin.parent_coin_info, eve_parent, False)
         await self.add_parent(eve_coin.name(), future_parent, False)
