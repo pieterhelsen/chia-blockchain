@@ -1,15 +1,29 @@
 (mod (CURRENT_METADATA METADATA_UPDATER_PUZZLE_HASH solution)
 
   ; METADATA and METADATA_UPDATER_PUZZLE_HASH are passed in as truths from the layer above
-
+  ; Solution (list data_uri meta_uri license_uri)
   ; This program returns ((new_metadata new_metadata_updater_puzhash) conditions)
 
-  ; once we find 'u' we don't need to continue looping
-  (defun add_url (METADATA new_url)
+  ; Prepend a new value to a list
+  (defun prepend_list (key old_list new_value)
+    (if new_value
+      (c key (c new_value old_list))
+      (c key old_list)
+    )
+  )
+
+  ; Add URLs to the fields
+  (defun add_url (METADATA solution)
     (if METADATA
       (if (= (f (f METADATA)) 'u')
-        (c (c 'u' (c new_url (r (f METADATA)))) (r METADATA))
-        (c (f METADATA) (add_url (r METADATA) new_url))
+        (c (prepend_list 'u' (r (f METADATA)) (f solution)) (add_url (r METADATA) solution))
+        (if (= (f (f METADATA)) 'mu')
+          (c (prepend_list 'mu' (r (f METADATA)) (f (r solution))) (add_url (r METADATA) solution))
+          (if (= (f (f METADATA)) 'lu')
+            (c (prepend_list 'lu' (r (f METADATA)) (f (r (r solution)))) (add_url (r METADATA) solution))
+            (c (f METADATA) (add_url (r METADATA) solution))
+          )
+        )
       )
       ()
     )

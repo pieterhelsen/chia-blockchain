@@ -5,6 +5,7 @@ from secrets import token_bytes
 from typing import Any, Dict, Optional
 
 import pytest
+from clvm_tools.binutils import disassemble
 
 from chia.consensus.block_rewards import calculate_base_farmer_reward, calculate_pool_reward
 from chia.full_node.mempool_manager import MempoolManager
@@ -14,6 +15,7 @@ from chia.simulator.simulator_protocol import FarmNewBlockProtocol
 from chia.types.blockchain_format.program import Program
 from chia.types.blockchain_format.sized_bytes import bytes32
 from chia.types.peer_info import PeerInfo
+from chia.util.byte_types import hexstr_to_bytes
 from chia.util.ints import uint16, uint32, uint64
 from chia.wallet.cat_wallet.cat_wallet import CATWallet
 from chia.wallet.nft_wallet.nft_wallet import NFTWallet
@@ -336,7 +338,7 @@ async def test_nft_wallet_rpc_creation_and_list(two_wallet_nodes: Any, trusted: 
         uris.append(coin.to_json_dict()["data_uris"][0])
     assert len(uris) == 2
     assert "https://chialisp.com/img/logo.svg" in uris
-    assert bytes32.fromhex(coins[1].to_json_dict()["nft_coin_id"]) in [x.name() for x in sb.additions()]
+    assert bytes32.fromhex(coins[1].to_json_dict()["nft_coin_id"][2:]) in [x.name() for x in sb.additions()]
 
 
 @pytest.mark.parametrize(
@@ -403,13 +405,28 @@ async def test_nft_wallet_rpc_update_metadata(two_wallet_nodes: Any, trusted: An
     assert coins_response.get("success")
     coins = coins_response["nft_list"]
     coin = coins[0].to_json_dict()
+    assert coin["data_hash"] == "0xd4584ad463139fa8c0d9f68f4b59f185"
+    assert coin["chain_info"] == disassemble(
+        Program.to(
+            [
+                ("u", ["https://www.chia.net/img/branding/chia-logo.svg"]),
+                ("h", hexstr_to_bytes("0xD4584AD463139FA8C0D9F68F4B59F185")),
+                ("mu", []),
+                ("mh", hexstr_to_bytes("00")),
+                ("lu", []),
+                ("lh", hexstr_to_bytes("00")),
+                ("sn", uint64(1)),
+                ("st", uint64(1)),
+            ]
+        )
+    )
     nft_coin_id = coin["nft_coin_id"]
     # add another URI
     tr1 = await api_0.nft_add_uri(
         {
             "wallet_id": nft_wallet_0_id,
             "nft_coin_id": nft_coin_id,
-            "hash": "0xD4584AD463139FA8C0D9F68F4B59F185",
+            "meta_uri": "http://metadata",
             "uri": "https://www.chia.net/img/branding/chia-logo-white.svg",
         }
     )
@@ -432,6 +449,9 @@ async def test_nft_wallet_rpc_update_metadata(two_wallet_nodes: Any, trusted: An
     uris = coin["data_uris"]
     assert len(uris) == 2
     assert "https://www.chia.net/img/branding/chia-logo-white.svg" in uris
+    assert len(coin["metadata_uris"]) == 1
+    assert "http://metadata" == coin["metadata_uris"][0]
+    assert len(coin["license_uris"]) == 0
 
     # add yet another URI
     nft_coin_id = coin["nft_coin_id"]
@@ -439,8 +459,9 @@ async def test_nft_wallet_rpc_update_metadata(two_wallet_nodes: Any, trusted: An
         {
             "wallet_id": nft_wallet_0_id,
             "nft_coin_id": nft_coin_id,
-            "hash": "0xD4584AD463139FA8C0D9F68F4B59F185",
-            "uri": "https://www.chia.net/img/branding/chia-logo-more-white.svg",
+            "uri": "http://data",
+            "license_uri": "https://license",
+            "meta_uri": "http://metadata2",
         }
     )
 
@@ -461,7 +482,10 @@ async def test_nft_wallet_rpc_update_metadata(two_wallet_nodes: Any, trusted: An
     coin = coins[0].to_json_dict()
     uris = coin["data_uris"]
     assert len(uris) == 3
-    assert "https://www.chia.net/img/branding/chia-logo-more-white.svg" in uris
+    assert len(coin["metadata_uris"]) == 2
+    assert "http://metadata2" == coin["metadata_uris"][0]
+    assert len(coin["license_uris"]) == 1
+    assert "https://license" == coin["license_uris"][0]
 
 
 @pytest.mark.parametrize(
